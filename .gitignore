@@ -1,0 +1,8 @@
+build/
+node_modules/
+*.png
+*.webp
+*.jpg
+lib/*
+!lib/constructor.*
+docs/
