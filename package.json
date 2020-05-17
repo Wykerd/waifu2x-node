@@ -1,12 +1,13 @@
 {
-  "name": "caddon",
+  "name": "waifu2x-node",
   "version": "0.1.0",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "docs:build": "npx typedoc --out ./docs --includeDeclarations --excludeExternals ./src/lib",
-    "docs:serve": "npx serve docs"
+    "docs:serve": "npx serve docs",
+    "build:lib": "npx tsc"
   },
   "author": "Daniel Wykerd <danielwykerd@gmail.com>",
   "license": "MIT",
@@ -15,5 +16,8 @@
     "typedoc": "^0.17.6",
     "typescript": "^3.9.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "npmlog": "^4.1.2",
+    "simple-get": "^4.0.0"
+  }
 }
