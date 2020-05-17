@@ -1,0 +1,10 @@
+build/
+node_modules/
+*.png
+*.webp
+*.jpg
+docs/
+vendor/
+example/
+src/lib/
+.vscode/
