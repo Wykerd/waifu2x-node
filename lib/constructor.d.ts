@@ -27,7 +27,7 @@ declare class W2XCJS {
     public loadModels(model_dir: string) : number;
 
     /**
-     * 
+     * Process file using waifu2x.
      * @param src_path Path to the source image
      * @param dst_path Path to the destination image
      * @param denoise_level From w2xconv.h: -1:none, 0:L0 denoise, 1:L1 denoise, 2:L2 denoise, 3:L3 denoise
@@ -37,6 +37,18 @@ declare class W2XCJS {
      * Returns 0 if successful.
      */
     public convertFile(src_path: string, dst_path: string, denoise_level: number = -1, scale: number = 2.0, imwrite_params: Types.W2XJSImwriteParams = { webp_quality: 101, jpeg_quality: 90, png_compression: 5 }) : number;
+
+    /**
+     * Process image buffer using waifu2x.
+     * @param src_buffer The buffer containing the image to convert
+     * @param dst_ext The file extension of the resulting image
+     * @param denoise_level From w2xconv.h: -1:none, 0:L0 denoise, 1:L1 denoise, 2:L2 denoise, 3:L3 denoise
+     * @param scale Scale factor
+     * @param imwrite_params Parameters used by opencv to save the image.
+     * @returns
+     * The encoded image buffer.
+     */
+    public convertBuffer(src_buffer: Buffer, dst_ext: string, denoise_level: number = -1, scale: number = 2.0, imwrite_params: Types.W2XJSImwriteParams = { webp_quality: 101, jpeg_quality: 90, png_compression: 5 }) : Buffer;
 }
 
 export default W2XCJS;

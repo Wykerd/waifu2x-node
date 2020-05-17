@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include/node"
+                "/usr/include/node",
+                "${workspaceFolder}/node_modules/nan"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

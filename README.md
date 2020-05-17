@@ -1,12 +1,12 @@
 # Waifu2x Converter for NodeJS
 
-A node addon module which wraps around [libw2xc from waifu2x-converter-cpp](https://github.com/DeadSix27/waifu2x-converter-cpp)
+NodeJS bindings / wrapper for using [libw2xc from waifu2x-converter-cpp](https://github.com/DeadSix27/waifu2x-converter-cpp)
 
 Used to upscale photos or Anime-style art using convolutional neural networks.
 
 # Usage
 
-This module currently only supports GNU/Linux, Windows support will come soon.
+This module currently only supports GNU/Linux and Windows.
 
 ## Prerequisites
 
@@ -42,6 +42,13 @@ On arch you'll use ```pacman -S opencv```
 
 - Other Linux
     - Build from source. See instructions here https://github.com/DeadSix27/waifu2x-converter-cpp/blob/master/BUILDING.md
+
+## Installation
+
+Install using npm
+```
+npm install waifu2x-node
+```
 
 # Documentation
 
