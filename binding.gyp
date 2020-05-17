@@ -12,8 +12,8 @@
                             "vendor/opencv/build/include"
                         ],
                         "libraries": [
-                            "vendor/opencv/build/x64/vc15/lib/opencv_world430.lib",
-                            "vendor/w2xc/w2xc.lib"
+                            "../vendor/opencv/build/x64/vc15/lib/opencv_world430.lib",
+                            "../vendor/w2xc/w2xc.lib"
                         ]
                     }
                 ],
