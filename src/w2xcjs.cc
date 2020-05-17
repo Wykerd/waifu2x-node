@@ -53,7 +53,9 @@ namespace w2xcjs {
         NODE_SET_PROTOTYPE_METHOD(tpl, "getConv", GetConv);
         NODE_SET_PROTOTYPE_METHOD(tpl, "loadModels", LoadModels);
         NODE_SET_PROTOTYPE_METHOD(tpl, "convertFile", ConvertFile);
+        #if !defined(_WIN32)
         NODE_SET_PROTOTYPE_METHOD(tpl, "convertBuffer", ConvertBuffer);
+        #endif
 
         Local<Function> constructor = tpl->GetFunction(context).ToLocalChecked();
         addon_data->SetInternalField(0, constructor);
