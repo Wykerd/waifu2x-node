@@ -1,6 +1,7 @@
 #include "w2xcjs.h"
 #include <string.h>
 #include <nan.h>
+#include <opencv2/imgcodecs.hpp>
 
 #if defined(_WIN32)
 #include <string>
@@ -98,6 +99,7 @@ namespace w2xcjs {
         }
     }
 
+    #if !defined(_WIN32)
     void W2XCJS::ConvertBuffer(const v8::FunctionCallbackInfo<v8::Value>& args) {
         Isolate* isolate = args.GetIsolate();
         Local<Context> context = isolate->GetCurrentContext();
@@ -199,6 +201,7 @@ namespace w2xcjs {
 
         args.GetReturnValue().Set(node::Buffer::Copy(isolate, (char *)output_buffer.data(), output_buffer.size()).ToLocalChecked());
     }
+    #endif
 
     void W2XCJS::ConvertFile(const v8::FunctionCallbackInfo<v8::Value>& args) {
         Isolate* isolate = args.GetIsolate();

@@ -6,8 +6,8 @@
 #include <node.h>
 #include <node_object_wrap.h>
 #include <opencv2/opencv.hpp>
-#include <opencv2/imgcodecs.hpp>
 
+#if !defined(_WIN32)
 W2XCONV_EXPORT void w2xconv_convert_mat
 (
 	struct W2XConv *conv,
@@ -20,6 +20,7 @@ W2XCONV_EXPORT void w2xconv_convert_mat
 	bool has_alpha,
 	bool dst_alpha
 );
+#endif
 
 namespace w2xcjs {
     class W2XCJS : public node::ObjectWrap {
@@ -36,7 +37,9 @@ namespace w2xcjs {
 
             static void ConvertFile(const v8::FunctionCallbackInfo<v8::Value>& args);
 
+            #if !defined(_WIN32)
             static void ConvertBuffer(const v8::FunctionCallbackInfo<v8::Value>& args);
+            #endif
 
             W2XConv *conv_;
     };
