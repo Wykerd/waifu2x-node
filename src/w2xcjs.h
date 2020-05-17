@@ -1,3 +1,6 @@
+#ifndef W2XCJS_H
+#define W2XCJS_H
+
 #define HAVE_OPENCV
 #include <w2xconv.h>
 #include <node.h>
@@ -23,3 +26,5 @@ namespace w2xcjs {
             W2XConv *conv_;
     };
 }
+
+#endif

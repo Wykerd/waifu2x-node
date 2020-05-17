@@ -2,6 +2,13 @@
 #include <opencv2/imgcodecs.hpp>
 #include <string.h>
 
+#if defined(_WIN32)
+#include <string>
+#define _UNICODE
+#define _tstring std::wstring
+#define str2wstr(X) std::wstring(X.begin(), X.end())
+#endif
+
 namespace w2xcjs {
     using v8::Context;
     using v8::Function;
@@ -153,7 +160,22 @@ namespace w2xcjs {
 
         double scale = args.Length() > 3 ? args[3]->NumberValue(context).FromMaybe(2.0) : 2.0;
 
-        int res = w2xconv_convert_file(obj->conv_, *String::Utf8Value(isolate, args[1]), *String::Utf8Value(isolate, args[0]), denoise_level, scale, 0, imwrite_params);
+        #if defined(_WIN32)
+        std::string out(*String::Utf8Value(isolate, args[1]));
+        std::string in(*String::Utf8Value(isolate, args[0]));
+
+        int res = w2xconv_convert_file(
+            obj->conv_, 
+            (char *)str2wstr(out).c_str(), 
+            (char *)str2wstr(in).c_str(), 
+            denoise_level, scale, 0, imwrite_params);
+        #else
+        int res = w2xconv_convert_file(
+            obj->conv_, 
+            *String::Utf8Value(isolate, args[1]), 
+            *String::Utf8Value(isolate, args[0]), 
+            denoise_level, scale, 0, imwrite_params);
+        #endif
 
         args.GetReturnValue().Set(Number::New(isolate, res));
     }
@@ -181,9 +203,13 @@ namespace w2xcjs {
 
         W2XCJS *obj = ObjectWrap::Unwrap<W2XCJS>(args.Holder());
 
+        #if defined(_WIN32)
+        std::string models_dir(*String::Utf8Value(isolate, args[0]));
+        int res = w2xconv_load_models(obj->conv_, (char *)str2wstr(models_dir).c_str());
+        #else
         String::Utf8Value models_dir(isolate, args[0]);
-
         int res = w2xconv_load_models(obj->conv_, *models_dir);
+        #endif
 
         args.GetReturnValue().Set(Number::New(isolate, res));
     }
@@ -239,7 +265,7 @@ namespace w2xcjs {
 
         target_processor->Set(
             context,
-            String::NewFromUtf8(isolate, "type", NewStringType::kNormal).ToLocalChecked(),
+            String::NewFromUtf8(isolate, "dev_name", NewStringType::kNormal).ToLocalChecked(),
             String::NewFromUtf8(isolate, obj->conv_->target_processor->dev_name, NewStringType::kNormal).ToLocalChecked())
         .FromJust();
 
