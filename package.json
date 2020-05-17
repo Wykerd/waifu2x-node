@@ -18,6 +18,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^14.0.1",
+    "@types/npmlog": "^4.1.2",
     "typedoc": "^0.17.6",
     "typescript": "^3.9.2"
   },

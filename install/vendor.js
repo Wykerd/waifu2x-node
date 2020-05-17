@@ -48,6 +48,10 @@ if (os.platform() === 'win32') {
     if (fs.existsSync("/usr/local/share/waifu2x-converter-cpp")) {
         var w2xc_path = path.resolve(__dirname, "../vendor/w2xc");
         if (!fs.existsSync(w2xc_path)) fs.mkdirSync(w2xc_path, { recursive: true });
-        fs.symlinkSync("/usr/local/share/waifu2x-converter-cpp", path.resolve(w2xc_path, "models_rgb"), 'dir');
+        try {
+            fs.symlinkSync("/usr/local/share/waifu2x-converter-cpp", path.resolve(w2xc_path, "models_rgb"), 'dir');   
+        } catch (error) {
+            if (error.code !== "EEXIST") throw error;
+        }
     }
 }

@@ -41,7 +41,7 @@ declare class W2XCJS {
     /**
      * Process image buffer using waifu2x.
      * @remarks
-     * This function is only available on the linux platform at the moment.
+     * This function is only available natively on the linux platform. It works on Windows via a hacky pollyfill.
      * @param src_buffer The buffer containing the image to convert
      * @param dst_ext The file extension of the resulting image
      * @param denoise_level From w2xconv.h: -1:none, 0:L0 denoise, 1:L1 denoise, 2:L2 denoise, 3:L3 denoise

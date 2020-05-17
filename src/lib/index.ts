@@ -1,8 +1,10 @@
 import os from "os";
 import path from "path";
+import applyPollyfil from './pollyfill';
 
 if (os.platform() === "win32") {
     process.env.PATH = `${process.env.PATH};${path.resolve(__dirname, '../vendor/w2xc')};${path.resolve(__dirname, '../vendor/opencv/build/x64/vc15/bin')}`;
+    applyPollyfil();
 }
 
 export const DEFAULT_MODELS_DIR = path.resolve(__dirname, '../vendor/w2xc/models_rgb');
