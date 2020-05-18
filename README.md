@@ -90,6 +90,22 @@ if (!err) {
 }
 ```
 
+#### Hide the pollyfill warning in Windows when using convertBuffer
+
+Using W2XCJS.convertBuffer on Windows uses a pollyfill and logs a warning to console whenever the function is called, to disable this warning follow the steps below:
+
+```typescript
+import { W2XCJS, DEFAULT_MODELS_DIR } from 'waifu2x-node';
+import applyPollyfill from 'waifu2x-node/lib/pollyfill';
+import os from 'os';
+
+if (os.platform() === 'win32') {
+    applyPollyfill(false); // false means don't show warnings
+}
+
+// Rest of code here ...
+```
+
 # Documentation
 
 Documentation is generated using TypeDoc, run `npm run docs:build` to build the documentation and `npm run docs:serve` to serve a local copy of the documentation.
