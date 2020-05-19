@@ -73,8 +73,6 @@ if (!err) {
 
 ### Upscale a buffer
 
-Buffer upscaling is only natively supported on Linux, but there is a pollyfill provided for Windows.
-
 ```typescript
 import { W2XCJS, DEFAULT_MODELS_DIR } from 'waifu2x-node';
 import fs from 'fs';
@@ -88,22 +86,6 @@ if (!err) {
     const output_buffer = converter.convertBuffer(input_buffer, '.JPG'); // second parameter is the file extension to encode to.
     fs.writeFileSync("out.jpg", output_buffer);
 }
-```
-
-#### Hide the pollyfill warning in Windows when using convertBuffer
-
-Using W2XCJS.convertBuffer on Windows uses a pollyfill and logs a warning to console whenever the function is called, to disable this warning follow the steps below:
-
-```typescript
-import { W2XCJS, DEFAULT_MODELS_DIR } from 'waifu2x-node';
-import applyPollyfill from 'waifu2x-node/lib/pollyfill';
-import os from 'os';
-
-if (os.platform() === 'win32') {
-    applyPollyfill(false); // false means don't show warnings
-}
-
-// Rest of code here ...
 ```
 
 # Documentation
