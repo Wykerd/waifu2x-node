@@ -1,6 +1,6 @@
 {
   "name": "waifu2x-node",
-  "version": "0.1.1",
+  "version": "0.2.2",
   "description": "Image Super-Resolution in NodeJS using libw2xc from waifu2x-converter-cpp.",
   "main": "lib/index.js",
   "scripts": {
@@ -38,11 +38,16 @@
   },
   "keywords": [
     "waifu2x",
+    "image processing",
     "image",
-    "processing",
+    "scale",
+    "resize",
+    "c++",
+    "native",
+    "addon",
+    "bindings",
     "cnn",
-    "super",
-    "resolution",
+    "super resolution",
     "upscaling",
     "anime"
   ],
