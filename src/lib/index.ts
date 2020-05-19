@@ -10,3 +10,4 @@ export const DEFAULT_MODELS_DIR = path.resolve(__dirname, '../vendor/w2xc/models
 export { default as Types } from "./types";
 export { default as Enums } from "./enums";
 export { default as W2XCJS } from "./constructor";
+export { default as W2XCJSPromises } from "./promises";

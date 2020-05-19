@@ -27,11 +27,21 @@ namespace Types {
         tta_mode: boolean;
     }
     
-    export interface W2XJSImwriteParams {
+    export interface ImwriteParams {
         webp_quality?: number;
         jpeg_quality?: number;
         png_compression?: number;
     }
+
+    export type DenoiseLevel = -1 | 0 | 1 | 2 | 3;
+
+    export interface AsyncOptions {
+        imwrite_params: ImwriteParams;
+        denoise_level: DenoiseLevel;
+        scale: number;
+    }
+
+    export type ConvertCallback = (dst: Buffer) => any;
 }
 
 export default Types;

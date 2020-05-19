@@ -2,7 +2,7 @@
     "targets": [
         {
             "target_name": "w2xcjs",
-            "sources": [ "src/main.cc", "src/w2xcjs.cc" ],
+            "sources": [ "src/main.cc", "src/w2xcjs.cc", "src/conv.cc" ],
             'cflags_cc!': [ '-fno-rtti' ],
             'cflags_cc': [ '-fexceptions' ],
             "conditions": [

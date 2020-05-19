@@ -1,4 +1,7 @@
+#define HAVE_OPENCV
 #include "w2xcjs.h"
+#include "conv.h"
+
 #include <string.h>
 #include <nan.h>
 #include <opencv2/imgcodecs.hpp>
@@ -54,6 +57,7 @@ namespace w2xcjs {
         NODE_SET_PROTOTYPE_METHOD(tpl, "loadModels", LoadModels);
         NODE_SET_PROTOTYPE_METHOD(tpl, "convertFile", ConvertFile);
         NODE_SET_PROTOTYPE_METHOD(tpl, "convertBuffer", ConvertBuffer);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "convertBufferAsync", ConvertBufferAsync);
 
         Local<Function> constructor = tpl->GetFunction(context).ToLocalChecked();
         addon_data->SetInternalField(0, constructor);
@@ -99,6 +103,147 @@ namespace w2xcjs {
         }
     }
 
+    void W2XCJS::ConvertBufferWorkAsyncComplete(uv_work_t *req, int status) {
+        Isolate * isolate = Isolate::GetCurrent();
+        v8::HandleScope handleScope(isolate);
+
+        ConvertBufferWork *work = static_cast<ConvertBufferWork *>(req->data);
+
+        Local<Object> resobj = node::Buffer::Copy(isolate, (char *)work->image_dst.data(), work->image_dst.size()).ToLocalChecked();
+
+        Local<Value> argv[] = { resobj };
+
+        Local<Function>::New(isolate, work->callback)->
+            Call(isolate->GetCurrentContext(), isolate->GetCurrentContext()->Global(), 1, argv);
+
+        work->callback.Reset();
+
+        free(work->dst_ext);
+
+        delete work;
+    }
+
+    void W2XCJS::ConvertBufferWorkAsync(uv_work_t *req) {
+        ConvertBufferWork *work = static_cast<ConvertBufferWork *>(req->data);
+
+        w2xcjs_convert_buf(
+            work->conv, 
+            work->image_src, 
+            work->image_src_len, 
+            work->image_dst, 
+            work->dst_ext, 
+            work->denoise_level, 
+            work->scale, 
+            &work->imwrite_params
+        );
+    }
+
+    void W2XCJS::ConvertBufferAsync(const v8::FunctionCallbackInfo<v8::Value>& args) {
+        Isolate* isolate = args.GetIsolate();
+        Local<Context> context = isolate->GetCurrentContext();
+
+        ConvertBufferWork * work = new ConvertBufferWork();
+        work->request.data = work;
+        
+        Local<Function> cb = Local<Function>::Cast(args[3]);
+
+        work->callback.Reset(isolate, cb);
+
+        // Args are:
+        // 0: input_buffer
+        // 1: out_ext
+        // 2: options
+        // 3: callback
+
+        if  (args.Length() < 4) {
+            isolate->ThrowException(
+                Exception::TypeError(
+                    String::NewFromUtf8(isolate, "Wrong number of arguments", NewStringType::kNormal).ToLocalChecked()
+                )
+            );
+            return;
+        };
+
+        if (!args[0]->IsObject() || !args[1]->IsString() || !args[2]->IsObject() || !args[3]->IsFunction()) {
+            isolate->ThrowException(
+                Exception::TypeError(
+                    String::NewFromUtf8(isolate, "Wrong arguments", NewStringType::kNormal).ToLocalChecked()
+                )
+            );
+            return;
+        };
+
+        uint8_t webp_res = 101, jpeg_res = 101, png_res = 5;
+
+        work->denoise_level = -1;
+
+        work->scale = 2.0;
+
+        String::Utf8Value dst_param(isolate, args[1]);
+
+        work->dst_ext = (char *)malloc(strlen(*dst_param));
+
+        strcpy(work->dst_ext, *dst_param);
+
+        Local<Object> options = args[2]->ToObject(context).ToLocalChecked();
+        Local<Array> opt_props = options->GetOwnPropertyNames(context).ToLocalChecked();
+        uint32_t opt_prop_len = opt_props->Length();
+
+        for (uint32_t i = 0; i < opt_prop_len; i++) {
+            Local<Value> lockey = opt_props->Get(context, i).ToLocalChecked();
+            Local<Value> locval = options->Get(context, lockey).ToLocalChecked();
+            char* key = *String::Utf8Value(isolate, locval);
+            if (!strcmp(key, "imwrite_params")) {
+                if (locval->IsObject()) {
+                    Local<Object> imwrite_opts = args[4]->ToObject(context).ToLocalChecked();
+
+                    Local<Array> props = imwrite_opts->GetOwnPropertyNames(context).ToLocalChecked();
+                    
+                    uint32_t propLen = props->Length();
+                    
+                    for (uint32_t i = 0; i < propLen; i++) {
+                        Local<Value> lockey_ = props->Get(context, i).ToLocalChecked();
+                        Local<Value> locval_ = imwrite_opts->Get(context, lockey).ToLocalChecked();
+                        char* key_ = *String::Utf8Value(isolate, locval);
+                        if (locval_->IsNumber()) {
+                            if (!strcmp(key_, "webp_quality")) {
+                                webp_res = locval_->IntegerValue(context).FromMaybe(webp_res);
+                            } else if (!strcmp(key_, "jpeg_quality")) {
+                                jpeg_res = locval_->IntegerValue(context).FromMaybe(jpeg_res);
+                            } else if (!strcmp(key_, "png_compression")) {
+                                png_res = locval_->IntegerValue(context).FromMaybe(png_res);
+                            }
+                        }
+                    }
+                }
+            } else if (!strcmp(key, "scale")) {
+                work->scale = locval->NumberValue(context).FromMaybe(2.0);
+            } else if (!strcmp(key, "denoise_level")) {
+                work->denoise_level = locval->IntegerValue(context).FromMaybe(-1);
+            }
+        }
+
+        work->imwrite_params.push_back(cv::IMWRITE_WEBP_QUALITY);
+        work->imwrite_params.push_back(webp_res);
+        work->imwrite_params.push_back(cv::IMWRITE_JPEG_QUALITY);
+        work->imwrite_params.push_back(jpeg_res);
+        work->imwrite_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
+        work->imwrite_params.push_back(png_res);
+
+        Local<Object> buffer = args[0]->ToObject(context).ToLocalChecked();
+
+        work->image_src = node::Buffer::Data(buffer);
+        work->image_src_len = node::Buffer::Length(buffer);
+
+        W2XCJS *obj = ObjectWrap::Unwrap<W2XCJS>(args.Holder());
+
+        work->conv = obj->conv_;
+
+        uv_queue_work(uv_default_loop(), &work->request, ConvertBufferWorkAsync, ConvertBufferWorkAsyncComplete);
+
+        args.GetReturnValue().Set(Undefined(isolate));
+    } 
+
     void W2XCJS::ConvertBuffer(const v8::FunctionCallbackInfo<v8::Value>& args) {
         Isolate* isolate = args.GetIsolate();
         Local<Context> context = isolate->GetCurrentContext();
@@ -121,7 +266,7 @@ namespace w2xcjs {
             return;
         };
 
-        uint8_t webp_res = 101, jpeg_res = 90, png_res = 5;
+        uint8_t webp_res = 101, jpeg_res = 101, png_res = 5;
 
         if (args.Length() > 4 && args[4]->IsObject()) {
             Local<Object> imwrite_opts = args[4]->ToObject(context).ToLocalChecked();
@@ -148,58 +293,14 @@ namespace w2xcjs {
             }
         }
 
-        int denoise_level = args.Length() > 2 ? args[2]->IntegerValue(context).FromMaybe(-1) : -1;
-
-        double scale = args.Length() > 3 ? args[3]->NumberValue(context).FromMaybe(2.0) : 2.0;
-        
         Local<Object> buffer = args[0]->ToObject(context).ToLocalChecked();
 
         char* input_buffer = node::Buffer::Data(buffer);
         size_t input_length = node::Buffer::Length(buffer);
 
-        cv::Mat rawData(1, input_length, CV_8UC1, (void *)input_buffer);
+        int denoise_level = args.Length() > 2 ? args[2]->IntegerValue(context).FromMaybe(-1) : -1;
 
-        cv::Mat image_src = cv::imdecode(rawData, cv::IMREAD_UNCHANGED);
-
-        cv::Mat image_dst(image_src.size().height * 2, image_src.size().width * 2, CV_8UC3);
-
-        W2XCJS *obj = ObjectWrap::Unwrap<W2XCJS>(args.Holder());
-
-        bool has_alpha = image_src.channels() == 4;
-        
-        if (has_alpha) {
-            std::vector<cv::Mat> src_channels(4);
-            cv::split(image_src, src_channels);
-            std::vector<cv::Mat> rgb(src_channels.begin(), src_channels.end() - 1);
-            image_src.release();
-            cv::merge(rgb, image_src);
-            w2xconv_convert_rgb(
-                obj->conv_,
-                image_dst.data, image_dst.step[0],
-                image_src.data, image_src.step[0],
-                image_src.size().width, image_src.size().height,
-                denoise_level, scale, 0
-            );
-            cv::Mat image_dst_rgba;
-            cv::cvtColor(image_dst, image_dst_rgba , cv::COLOR_RGB2RGBA);
-            image_dst.release();
-            image_dst = image_dst_rgba;
-            std::vector<cv::Mat> dst_channels(4);
-            cv::split(image_dst, dst_channels);
-            cv::resize(src_channels[3], dst_channels[3], image_dst.size(), 0, 0, cv::INTER_LINEAR);
-            cv::merge(dst_channels, image_dst);
-        } else {
-            w2xconv_convert_rgb(
-                obj->conv_,
-                image_dst.data, image_dst.step[0],
-                image_src.data, image_src.step[0],
-                image_src.size().width, image_src.size().height,
-                denoise_level, scale, 0
-            );
-        }
-        
-
-        std::vector<uchar> output_buffer;
+        double scale = args.Length() > 3 ? args[3]->NumberValue(context).FromMaybe(2.0) : 2.0;
 
         std::vector<int> compression_params;
         compression_params.push_back(cv::IMWRITE_WEBP_QUALITY);
@@ -209,11 +310,20 @@ namespace w2xcjs {
         compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
         compression_params.push_back(png_res);
 
-        cv::imencode(*String::Utf8Value(isolate, args[1]), image_dst, output_buffer, compression_params);
+        std::vector<uchar> output_buffer;
 
-        image_src.release();
-        rawData.release();
-        image_dst.release();
+        W2XCJS *obj = ObjectWrap::Unwrap<W2XCJS>(args.Holder());
+
+        w2xcjs_convert_buf(
+            obj->conv_, 
+            input_buffer, 
+            input_length, 
+            output_buffer, 
+            *String::Utf8Value(isolate, args[1]), 
+            denoise_level, 
+            scale, 
+            &compression_params
+        );
 
         args.GetReturnValue().Set(node::Buffer::Copy(isolate, (char *)output_buffer.data(), output_buffer.size()).ToLocalChecked());
     }
@@ -240,7 +350,7 @@ namespace w2xcjs {
             return;
         };
 
-        uint8_t webp_res = 101, jpeg_res = 90, png_res = 5;
+        uint8_t webp_res = 101, jpeg_res = 101, png_res = 5;
 
         W2XCJS *obj = ObjectWrap::Unwrap<W2XCJS>(args.Holder());
 
