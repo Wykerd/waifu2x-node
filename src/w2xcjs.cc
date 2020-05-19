@@ -53,9 +53,7 @@ namespace w2xcjs {
         NODE_SET_PROTOTYPE_METHOD(tpl, "getConv", GetConv);
         NODE_SET_PROTOTYPE_METHOD(tpl, "loadModels", LoadModels);
         NODE_SET_PROTOTYPE_METHOD(tpl, "convertFile", ConvertFile);
-        #if !defined(_WIN32)
         NODE_SET_PROTOTYPE_METHOD(tpl, "convertBuffer", ConvertBuffer);
-        #endif
 
         Local<Function> constructor = tpl->GetFunction(context).ToLocalChecked();
         addon_data->SetInternalField(0, constructor);
@@ -101,7 +99,6 @@ namespace w2xcjs {
         }
     }
 
-    #if !defined(_WIN32)
     void W2XCJS::ConvertBuffer(const v8::FunctionCallbackInfo<v8::Value>& args) {
         Isolate* isolate = args.GetIsolate();
         Local<Context> context = isolate->GetCurrentContext();
@@ -164,26 +161,43 @@ namespace w2xcjs {
 
         cv::Mat image_src = cv::imdecode(rawData, cv::IMREAD_UNCHANGED);
 
-        cv::Mat image_dst;
-
-        w2xconv_rgb_float3 background;
-        background.r = background.g = background.b = 1.0f;
+        cv::Mat image_dst(image_src.size().height * 2, image_src.size().width * 2, CV_8UC3);
 
         W2XCJS *obj = ObjectWrap::Unwrap<W2XCJS>(args.Holder());
 
         bool has_alpha = image_src.channels() == 4;
-
-        w2xconv_convert_mat(
-            obj->conv_,
-            &image_dst,
-            &image_src,
-            denoise_level,
-            scale,
-            0,
-            background,
-            has_alpha,
-            has_alpha
-        );
+        
+        if (has_alpha) {
+            std::vector<cv::Mat> src_channels(4);
+            cv::split(image_src, src_channels);
+            std::vector<cv::Mat> rgb(src_channels.begin(), src_channels.end() - 1);
+            image_src.release();
+            cv::merge(rgb, image_src);
+            w2xconv_convert_rgb(
+                obj->conv_,
+                image_dst.data, image_dst.step[0],
+                image_src.data, image_src.step[0],
+                image_src.size().width, image_src.size().height,
+                denoise_level, scale, 0
+            );
+            cv::Mat image_dst_rgba;
+            cv::cvtColor(image_dst, image_dst_rgba , cv::COLOR_RGB2RGBA);
+            image_dst.release();
+            image_dst = image_dst_rgba;
+            std::vector<cv::Mat> dst_channels(4);
+            cv::split(image_dst, dst_channels);
+            cv::resize(src_channels[3], dst_channels[3], image_dst.size(), 0, 0, cv::INTER_LINEAR);
+            cv::merge(dst_channels, image_dst);
+        } else {
+            w2xconv_convert_rgb(
+                obj->conv_,
+                image_dst.data, image_dst.step[0],
+                image_src.data, image_src.step[0],
+                image_src.size().width, image_src.size().height,
+                denoise_level, scale, 0
+            );
+        }
+        
 
         std::vector<uchar> output_buffer;
 
@@ -203,7 +217,6 @@ namespace w2xcjs {
 
         args.GetReturnValue().Set(node::Buffer::Copy(isolate, (char *)output_buffer.data(), output_buffer.size()).ToLocalChecked());
     }
-    #endif
 
     void W2XCJS::ConvertFile(const v8::FunctionCallbackInfo<v8::Value>& args) {
         Isolate* isolate = args.GetIsolate();
