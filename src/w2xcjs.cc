@@ -142,12 +142,16 @@ namespace w2xcjs {
         Isolate* isolate = args.GetIsolate();
         Local<Context> context = isolate->GetCurrentContext();
 
-        ConvertBufferWork * work = new ConvertBufferWork();
-        work->request.data = work;
-        
-        Local<Function> cb = Local<Function>::Cast(args[3]);
+        W2XCJS *obj = ObjectWrap::Unwrap<W2XCJS>(args.Holder());
 
-        work->callback.Reset(isolate, cb);
+        if (obj->conv_->target_processor->type == W2XCONV_PROC_HOST) {
+            isolate->ThrowException(
+                Exception::Error(
+                    String::NewFromUtf8(isolate, "Async methods are not supported on W2XCONV_PROC_HOST", NewStringType::kNormal).ToLocalChecked()
+                )
+            );
+            return;
+        }
 
         // Args are:
         // 0: input_buffer
@@ -172,6 +176,13 @@ namespace w2xcjs {
             );
             return;
         };
+
+        ConvertBufferWork * work = new ConvertBufferWork();
+        work->request.data = work;
+        
+        Local<Function> cb = Local<Function>::Cast(args[3]);
+
+        work->callback.Reset(isolate, cb);
 
         uint8_t webp_res = 101, jpeg_res = 101, png_res = 5;
 
@@ -203,8 +214,8 @@ namespace w2xcjs {
                     
                     for (uint32_t i = 0; i < propLen; i++) {
                         Local<Value> lockey_ = props->Get(context, i).ToLocalChecked();
-                        Local<Value> locval_ = imwrite_opts->Get(context, lockey).ToLocalChecked();
-                        char* key_ = *String::Utf8Value(isolate, locval);
+                        Local<Value> locval_ = imwrite_opts->Get(context, lockey_).ToLocalChecked();
+                        char* key_ = *String::Utf8Value(isolate, lockey_);
                         if (locval_->IsNumber()) {
                             if (!strcmp(key_, "webp_quality")) {
                                 webp_res = locval_->IntegerValue(context).FromMaybe(webp_res);
@@ -234,8 +245,6 @@ namespace w2xcjs {
 
         work->image_src = node::Buffer::Data(buffer);
         work->image_src_len = node::Buffer::Length(buffer);
-
-        W2XCJS *obj = ObjectWrap::Unwrap<W2XCJS>(args.Holder());
 
         work->conv = obj->conv_;
 
@@ -278,7 +287,7 @@ namespace w2xcjs {
             for (uint32_t i = 0; i < propLen; i++) {
                 Local<Value> lockey = props->Get(context, i).ToLocalChecked();
                 Local<Value> locval = imwrite_opts->Get(context, lockey).ToLocalChecked();
-                char* key = *String::Utf8Value(isolate, locval);
+                char* key = *String::Utf8Value(isolate, lockey);
                 if (locval->IsNumber()) {
                     if (!strcmp(key, "webp_quality")) {
                         webp_res = locval->IntegerValue(context).FromMaybe(webp_res);
@@ -364,7 +373,7 @@ namespace w2xcjs {
             for (uint32_t i = 0; i < propLen; i++) {
                 Local<Value> lockey = props->Get(context, i).ToLocalChecked();
                 Local<Value> locval = imwrite_opts->Get(context, lockey).ToLocalChecked();
-                char* key = *String::Utf8Value(isolate, locval);
+                char* key = *String::Utf8Value(isolate, lockey);
                 if (locval->IsNumber()) {
                     if (!strcmp(key, "webp_quality")) {
                         webp_res = locval->IntegerValue(context).FromMaybe(webp_res);
