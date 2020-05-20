@@ -1,7 +1,6 @@
 #include "conv.h"
 
 #include <w2xconv.h>
-#include <opencv2/opencv.hpp>
 #include <opencv2/imgcodecs.hpp>
 
 void w2xcjs_convert_buf
@@ -9,7 +8,7 @@ void w2xcjs_convert_buf
     struct W2XConv *conv,
     char* image_src, 
     size_t image_src_len,
-    std::vector<uint8_t> &image_dst,
+    std::vector<uchar> &image_dst,
     char* dst_ext,
     int denoise_level,
 	double scale,
