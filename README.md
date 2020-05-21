@@ -50,9 +50,7 @@ Install using npm
 npm install waifu2x-node
 ```
 
-## Examples
-
-NOTE: All waifu2x-node functions is synchronous.
+## Synchronous Examples
 
 ### Upscaling a file
 
@@ -85,6 +83,78 @@ if (!err) {
     const input_buffer = fs.readFileSync("in.png");
     const output_buffer = converter.convertBuffer(input_buffer, '.JPG'); // second parameter is the file extension to encode to.
     fs.writeFileSync("out.jpg", output_buffer);
+}
+```
+
+## Asynchronous examples
+
+Asynchronous functions only work on GPU processor types due to instabilities on the CPU
+
+### Upscaling using callbacks
+
+```typescript
+import { W2XCJS, DEFAULT_MODELS_DIR } from 'waifu2x-node';
+import fs from 'fs';
+
+const converter = new W2XCJS();
+
+const err = converter.loadModels(DEFAULT_MODELS_DIR); // model loading is synchronous
+
+if (!err) {
+    fs.readFile("in.png", (err, input_buffer) => {
+        if (err) throw err;
+        converter.convertBufferAsync(input_buffer, '.WEBP', { /* AsyncOptions */ }, dst_buffer => {
+            fs.writeFile("out.webp", dst_buffer, err => {
+                if (err) throw err;
+            })
+        })
+    });
+}
+```
+
+### Upscaling using promises
+
+The library provides a wrapper class for using promises
+
+```typescript
+import { W2XCJS, DEFAULT_MODELS_DIR, W2XCJSPromises } from 'waifu2x-node';
+import fs from 'fs';
+
+const promises = new W2XCJSPromises(new W2XCJS());
+
+const err = promises.converter.loadModels(DEFAULT_MODELS_DIR); // model loading is synchronous
+
+if (!err) {
+    (async () => {
+        const input_buffer = await fs.promises.readFile("in.png");
+        const dst_buffer = await promises.convertBuffer(input_buffer, '.WEBP', { /* AsyncOptions */ });
+        await fs.promises.writeFile("out.webp", dst_buffer);
+    })();
+}
+```
+
+### Asynchronous convert options (AsyncOptions)
+
+Abstract of the library source for reference, you could also generate the documentation for more detailed overview.
+
+```typescript
+interface AsyncOptions {
+    // encoding options for destination buffer.
+    imwrite_params: ImwriteParams;
+    // denoising options (number value from -1 to 3 where -1 is no denoising)
+    denoise_level: DenoiseLevel;
+    // Scale factor.
+    scale: number;
+}
+```
+
+```typescript
+interface ImwriteParams {
+    // quality factor for webp and jpeg from 0 to 101 where 101 is lossless.
+    webp_quality?: number;
+    jpeg_quality?: number;
+    // compression factor for png from 0 to 9 where 9 is smallest size and longest time.
+    png_compression?: number;
 }
 ```
 

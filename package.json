@@ -1,6 +1,6 @@
 {
   "name": "waifu2x-node",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Image Super-Resolution in NodeJS using libw2xc from waifu2x-converter-cpp.",
   "main": "lib/index.js",
   "scripts": {

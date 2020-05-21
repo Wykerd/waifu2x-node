@@ -1,28 +1,14 @@
-const w2xcjs = require("../lib");
+const { W2XCJS, DEFAULT_MODELS_DIR, W2XCJSPromises } = require('../lib');
 const fs = require('fs');
 
-const converter = new w2xcjs.W2XCJS(1, 0, 0);
+const promises = new W2XCJSPromises(new W2XCJS());
 
-console.log(converter.loadModels(w2xcjs.DEFAULT_MODELS_DIR));
-console.log(converter.getConv());
+const err = promises.converter.loadModels(DEFAULT_MODELS_DIR); // model loading is synchronous
 
-const file = fs.readFileSync('../img.png');
-
-/*
-console.log(converter.convertFile("../img.png", "out.webp"));
-
-const newfile = converter.convertBuffer(file, '.PNG');
-
-fs.writeFileSync("out.png", newfile);
-*/
-
-converter.convertBufferAsync(file, '.PNG', {}, function (e) {
-    fs.writeFileSync("out.png", e)
-});
-
-const promise = new w2xcjs.W2XCJSPromises(converter);
-
-promise.convertBuffer(file, '.WEBP', {})
-    .then(function (e) {
-        fs.writeFileSync("out_async.webp", e)
-    });
+if (!err) {
+    (async () => {
+        const input_buffer = await fs.promises.readFile("in.png");
+        const dst_buffer = await promises.convertBuffer(input_buffer, '.WEBP', { /* AsyncOptions */ });
+        await fs.promises.writeFile("out.webp", dst_buffer);
+    })();
+}
